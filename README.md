@@ -1,0 +1,1 @@
+A Real-Time Analytics Dashboard that will display stock and crypto prices. Currently working on Crypto first.
