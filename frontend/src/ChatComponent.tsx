@@ -1,88 +1,47 @@
-import React, { useState, useEffect, useRef, type ChangeEvent } from 'react';
+import { Stomp } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-import { Client, type IMessage } from "@stomp/stompjs";
+import React from "react";
 
-interface ChatMessage {
-    sender: string;
-    content: string;
+const socket = new SockJS('http://localhost:8080/chat');
+const stompClient = Stomp.over(socket);
+
+stompClient.connect({}, function (){
+  stompClient.subscribe("/topic/messages", function (message){
+    const msg = JSON.parse(message.body);
+    const li = document.createElement("li");
+    li.appendChild(document.createTextNode(msg.sender + ": " + msg.content));
+    document.getElementById("messages")?.appendChild(li);
+  })
+
+});
+ 
+
+function sendMessage() {
+  // It's important to cast the HTMLElement to its type because otherwise 'value' property doesn't exist. 
+  // Written like this because otherwise it will get messed up as a tsx component
+  const content: string = (document.getElementById("message") as HTMLInputElement).value;
+  const msg = { sender: "User", content: content };
+  stompClient.send("/app/sendMessage", {}, JSON.stringify(msg));
+  (document.getElementById("message") as HTMLInputElement).value = ""
 }
 
 const ChatComponent: React.FC = () => {
-  // State for the message list and current input
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputValue, setInputValue] = useState<string>("");
-  
-  // Use a ref to persist the STOMP client without triggering re-renders
-  const stompClientRef = useRef<Client | null>(null);
+  return(
+    <div>
+      <h1 className="mb-4">Welcome to a simple version of the chat app.</h1>
 
-  useEffect(() => {
-    // 1. Initialize Connection
-    const client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8080/chat'),
-      reconnectDelay: 5000, // Auto-reconnect if server goes down
-      onConnect: () => {
-        console.log('Connected');
+      <input type="text" id="message" className="mb-4" placeholder="Type your message here..." />
+      <button onClick={() => sendMessage()}>Send</button>
+
+      <br/>
+
+      <ul id="messages">
+        Messages go here:
         
-        // 2. Subscribe to Topic
-        client.subscribe('/topic/messages', (message: IMessage) => {
-          const receivedMsg: ChatMessage = JSON.parse(message.body);
-          // Append new message to the list
-          setMessages((prev) => [...prev, receivedMsg]);
-        });
-      },
-    });
-
-    client.activate();
-    stompClientRef.current = client;
-
-    // 3. Cleanup on unmount
-    return () => {
-      if (stompClientRef.current) {
-        stompClientRef.current.deactivate();
-      }
-    };
-  }, []);
-
-  const sendMessage = () => {
-    if (stompClientRef.current && stompClientRef.current.connected && inputValue.trim()) {
-      const chatMessage: ChatMessage = {
-        sender: "User", // You can replace this with actual auth logic later
-        content: inputValue,
-      };
-
-      // 4. Send Message
-      stompClientRef.current.publish({
-        destination: '/app/sendMessage',
-        body: JSON.stringify(chatMessage),
-      });
-
-      setInputValue(""); // Clear input after sending
-    }
-  };
-
-  return (
-    <div style={{ padding: '20px' }}>
-      <h2>Chat Room</h2>
-      
-      {/* Messages List */}
-      <ul id="messages" style={{ border: '1px solid #ccc', height: '200px', overflowY: 'scroll' }}>
-        {messages.map((msg, index) => (
-          <li key={index}>
-            <strong>{msg.sender}:</strong> {msg.content}
-          </li>
-        ))}
       </ul>
-
-      {/* Input Field */}
-      <input 
-        type="text" 
-        value={inputValue}
-        onChange={(e: ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
-        placeholder="Type a message..."
-      />
-      <button onClick={sendMessage}>Send</button>
+      
     </div>
-  );
-};
+  )
+}
 
 export default ChatComponent;
