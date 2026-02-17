@@ -2,14 +2,14 @@ import { Stomp } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import React from "react";
 
-const socket = new SockJS('http://localhost:8080/chat');
+const socket = new SockJS('http://localhost:8080/crypto-info');
 const stompClient = Stomp.over(socket);
 
 stompClient.connect({}, function (){
-  stompClient.subscribe("/topic/messages", function (message){
+  stompClient.subscribe("/topic/prices", function (message){
     const msg = JSON.parse(message.body);
     const li = document.createElement("li");
-    li.appendChild(document.createTextNode(msg.sender + ": " + msg.content));
+    li.appendChild(document.createTextNode("Here is the message from spring boot: " + msg.c));
     document.getElementById("messages")?.appendChild(li);
   })
 
@@ -27,6 +27,7 @@ function sendMessage() {
 
 const ChatComponent: React.FC = () => {
   return(
+    
     <div>
       <h1 className="mb-4">Welcome to a simple version of the chat app.</h1>
 

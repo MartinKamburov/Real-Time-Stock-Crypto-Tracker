@@ -16,9 +16,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         config.setApplicationDestinationPrefixes("/app");
     }
 
+//    This is the endpoint for where my users in the frontend will connect to my server
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry){
-        registry.addEndpoint("/chat").setAllowedOriginPatterns("*").withSockJS();
+        registry.addEndpoint("/crypto-info").setAllowedOriginPatterns("*").withSockJS();
     }
 
 }
